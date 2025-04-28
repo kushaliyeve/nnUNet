@@ -14,7 +14,7 @@ class nnUNetTrainer_Wandb_Logger(nnUNetTrainer):
 
         wandb.init(
                 project="pinkcc",
-                # name=f"Dataset{self.dataset_name}_{self.configuration}_{self.fold}",
+                name=f"Dataset_001_PINKCC_{self.fold}",
                 config={
                     "plans": self.plans_manager,
                     "configuration": self.configuration_manager,
