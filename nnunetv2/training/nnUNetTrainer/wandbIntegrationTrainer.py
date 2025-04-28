@@ -33,6 +33,17 @@ class nnUNetTrainer_Wandb_Logger(nnUNetTrainer):
         self.print_to_log_file(
             f"Epoch time: {np.round(self.logger.my_fantastic_logging['epoch_end_timestamps'][-1] - self.logger.my_fantastic_logging['epoch_start_timestamps'][-1], decimals=2)} s")
 
+        dice_scores = self.logger.my_fantastic_logging['dice_per_class_or_region'][-1]
+        wandb.log({
+            "epoch": self.current_epoch,
+            "train_loss": np.round(self.logger.my_fantastic_logging['train_losses'][-1], decimals=4),
+            "val_loss": np.round(self.logger.my_fantastic_logging['val_losses'][-1], decimals=4),
+            "learning_rate": self.optimizer.param_groups[0]['lr'],
+            **{f'pseudo_dice_class_{class_idx}': np.round(dice_value, decimals=4)
+               for class_idx, dice_value in enumerate(dice_scores)}
+        }, step=self.current_epoch)
+        
+        
         # handling periodic checkpointing
         current_epoch = self.current_epoch
         if (current_epoch + 1) % self.save_every == 0 and current_epoch != (self.num_epochs - 1):
@@ -44,9 +55,13 @@ class nnUNetTrainer_Wandb_Logger(nnUNetTrainer):
             self.print_to_log_file(f"Yayy! New best EMA pseudo Dice: {np.round(self._best_ema, decimals=4)}")
             self.save_checkpoint(join(self.output_folder, 'checkpoint_best.pth'))
             wandb.log({
-                    "best_ema": {np.round(self._best_ema, decimals=4)}
-                })
-            wandb.log_artifact(join(self.output_folder, 'checkpoint_best.pth'), name="checkpoint_best.pth", type="model")
+                "best_ema": np.round(self._best_ema, decimals=4),
+                "best_epoch": self.current_epoch
+            }, step=self.current_epoch)
+            
+            artifact = wandb.Artifact('best_model', type='model')
+            artifact.add_file(join(self.output_folder, 'checkpoint_best.pth'))
+            wandb.log_artifact(artifact)
             
 
         if self.local_rank == 0:
@@ -73,18 +88,7 @@ class nnUNetTrainer_Wandb_Logger(nnUNetTrainer):
                     val_outputs.append(self.validation_step(next(self.dataloader_val)))
                 self.on_validation_epoch_end(val_outputs)
 
-            self.on_epoch_end()
-                
-            wandb.log({
-                "epoch": epoch,
-                "train_loss": np.round(self.logger.my_fantastic_logging['train_losses'][-1], decimals=4),
-                "val_loss": np.round(self.logger.my_fantastic_logging['val_losses'][-1], decimals=4),                
-                "learning_rate": self.optimizer.param_groups[0]['lr']
-            }, step=epoch)
-            
-            dice_scores = self.logger.my_fantastic_logging['dice_per_class_or_region'][-1]
-            for class_idx, dice_value in enumerate(dice_scores):
-                wandb.log({f'pseudo_dice_class_{class_idx}': np.round(dice_value, decimals=4)}, step=epoch)                
+            self.on_epoch_end()               
 
         self.on_train_end()
     
