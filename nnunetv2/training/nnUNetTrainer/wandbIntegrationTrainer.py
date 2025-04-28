@@ -26,8 +26,6 @@ class nnUNetTrainer_Wandb_Logger(nnUNetTrainer):
         """used for debugging plans etc"""
         super().__init__(plans, configuration, fold, dataset_json, device)
         
-        self.num_epochs = 1
-
         wandb.init(
                 project="pinkcc",
                 name=f"Dataset_001_PINKCC_{self.fold}",
@@ -233,7 +231,6 @@ class nnUNetTrainer_Wandb_Logger(nnUNetTrainer):
                                    also_print_to_console=True)
             wandb.log({
                 "mean_validation_dice": metrics['foreground_mean']["Dice"],
-                "mean_validation_dice_per_class": metrics['foreground_mean']["Dice_per_class"]
             }, step=self.current_epoch)
         self.set_deep_supervision_enabled(True)
         compute_gaussian.cache_clear()
