@@ -1,10 +1,7 @@
 import torch
 import wandb
 import numpy as np
-from typing import List
-from torch import distributed as dist
-from nnunetv2.utilities.collate_outputs import collate_outputs
-from nnunetv2.utilities.wandb_artifact import log_artifact
+from batchgenerators.utilities.file_and_folder_operations import join
 
 
 from nnunetv2.training.nnUNetTrainer.nnUNetTrainer import nnUNetTrainer
@@ -24,54 +21,6 @@ class nnUNetTrainer_Wandb_Logger(nnUNetTrainer):
                     "num_epochs": self.num_epochs
                 }
             )
-        
-    # def on_train_epoch_end(self, train_outputs: List[dict]):
-    #     outputs = collate_outputs(train_outputs)
-
-    #     if self.is_ddp:
-    #         losses_tr = [None for _ in range(dist.get_world_size())]
-    #         dist.all_gather_object(losses_tr, outputs['loss'])
-    #         loss_here = np.vstack(losses_tr).mean()
-    #     else:
-    #         loss_here = np.mean(outputs['loss'])
-
-    #     self.logger.log('train_losses', loss_here, self.current_epoch)
-    #     return loss_here
-    
-    # def on_validation_epoch_end(self, val_outputs: List[dict]):
-    #     outputs_collated = collate_outputs(val_outputs)
-    #     tp = np.sum(outputs_collated['tp_hard'], 0)
-    #     fp = np.sum(outputs_collated['fp_hard'], 0)
-    #     fn = np.sum(outputs_collated['fn_hard'], 0)
-
-    #     if self.is_ddp:
-    #         world_size = dist.get_world_size()
-
-    #         tps = [None for _ in range(world_size)]
-    #         dist.all_gather_object(tps, tp)
-    #         tp = np.vstack([i[None] for i in tps]).sum(0)
-
-    #         fps = [None for _ in range(world_size)]
-    #         dist.all_gather_object(fps, fp)
-    #         fp = np.vstack([i[None] for i in fps]).sum(0)
-
-    #         fns = [None for _ in range(world_size)]
-    #         dist.all_gather_object(fns, fn)
-    #         fn = np.vstack([i[None] for i in fns]).sum(0)
-
-    #         losses_val = [None for _ in range(world_size)]
-    #         dist.all_gather_object(losses_val, outputs_collated['loss'])
-    #         loss_here = np.vstack(losses_val).mean()
-    #     else:
-    #         loss_here = np.mean(outputs_collated['loss'])
-
-    #     global_dc_per_class = [i for i in [2 * i / (2 * i + j + k) for i, j, k in zip(tp, fp, fn)]]
-    #     mean_fg_dice = np.nanmean(global_dc_per_class)
-    #     self.logger.log('mean_fg_dice', mean_fg_dice, self.current_epoch)
-    #     self.logger.log('dice_per_class_or_region', global_dc_per_class, self.current_epoch)
-    #     self.logger.log('val_losses', loss_here, self.current_epoch)
-        
-    #     return loss_here, global_dc_per_class
         
     def run_training(self):
         self.on_train_start()
@@ -93,17 +42,23 @@ class nnUNetTrainer_Wandb_Logger(nnUNetTrainer):
                 self.on_validation_epoch_end(val_outputs)
 
             self.on_epoch_end()
-            
-            # if self._best_ema is None or self.logger.my_fantastic_logging['ema_fg_dice'][-1] > self._best_ema:
-            #     log_artifact()
+                
             wandb.log({
                 "epoch": epoch,
                 "train_loss": np.round(self.logger.my_fantastic_logging['train_losses'][-1], decimals=4),
-                "val_loss": np.round(self.logger.my_fantastic_logging['val_losses'][-1], decimals=4),
-                # "pseudo_dice_class_1": [np.round(i, decimals=4) for i in
-                #                                self.logger.my_fantastic_logging['dice_per_class_or_region'][-1]]
-                # "learning_rate": self.optimizer.param_groups[0]['lr']
+                "val_loss": np.round(self.logger.my_fantastic_logging['val_losses'][-1], decimals=4),                
+                "learning_rate": self.optimizer.param_groups[0]['lr']
             }, step=epoch)
+            
+            dice_scores = self.logger.my_fantastic_logging['dice_per_class_or_region'][-1]
+            for class_idx, dice_value in enumerate(dice_scores):
+                wandb.log(f'pseudo_dice_class_{class_idx}', np.round(dice_value, decimals=4))
+            
+            if self._best_ema is None or self.logger.my_fantastic_logging['ema_fg_dice'][-1] > self._best_ema:
+                wandb.log({
+                    "best_ema": {np.round(self._best_ema, decimals=4)}
+                }, step=epoch)
+                wandb.log_artifact(join(self.output_folder, 'checkpoint_best.pth'), name="checkpoint_best.pth", type="model")
 
         self.on_train_end()
     
