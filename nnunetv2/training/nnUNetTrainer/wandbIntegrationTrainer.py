@@ -25,6 +25,8 @@ class nnUNetTrainer_Wandb_Logger(nnUNetTrainer):
                  device: torch.device = torch.device('cuda')):
         """used for debugging plans etc"""
         super().__init__(plans, configuration, fold, dataset_json, device)
+        
+        self.num_epochs = 1
 
         wandb.init(
                 project="pinkcc",
