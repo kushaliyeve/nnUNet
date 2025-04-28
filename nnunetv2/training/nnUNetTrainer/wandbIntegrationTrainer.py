@@ -52,7 +52,7 @@ class nnUNetTrainer_Wandb_Logger(nnUNetTrainer):
             
             dice_scores = self.logger.my_fantastic_logging['dice_per_class_or_region'][-1]
             for class_idx, dice_value in enumerate(dice_scores):
-                wandb.log(f'pseudo_dice_class_{class_idx}', np.round(dice_value, decimals=4))
+                wandb.log({f'pseudo_dice_class_{class_idx}', np.round(dice_value, decimals=4)}, step=epoch)
             
             if self._best_ema is None or self.logger.my_fantastic_logging['ema_fg_dice'][-1] > self._best_ema:
                 wandb.log({
