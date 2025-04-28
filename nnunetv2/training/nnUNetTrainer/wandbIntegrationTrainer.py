@@ -61,7 +61,7 @@ class nnUNetTrainer_Wandb_Logger(nnUNetTrainer):
             
             artifact = wandb.Artifact('best_model', type='model')
             artifact.add_file(join(self.output_folder, 'checkpoint_best.pth'))
-            wandb.log_artifact(artifact)
+            wandb.log_artifact(artifact, aliases=['latest', 'best'])
             
 
         if self.local_rank == 0:
