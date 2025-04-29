@@ -75,9 +75,9 @@ class nnUNetTrainer_Wandb_Logger(nnUNetTrainer):
                 "best_epoch": self.current_epoch
             }, step=self.current_epoch)
             
-            artifact = wandb.Artifact('best_model', type='model')
-            artifact.add_file(join(self.output_folder, 'checkpoint_best.pth'))
-            wandb.log_artifact(artifact, aliases=['latest', 'best'])
+            # artifact = wandb.Artifact('best_model', type='model')
+            # artifact.add_file(join(self.output_folder, 'checkpoint_best.pth'))
+            # wandb.log_artifact(artifact, aliases=['latest', 'best'])
             
 
         if self.local_rank == 0:
