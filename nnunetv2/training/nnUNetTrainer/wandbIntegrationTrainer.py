@@ -240,12 +240,13 @@ class nnUNetTrainer_Wandb_Logger(nnUNetTrainer):
             wandb.log({
                 "mean_validation_dice": metrics['foreground_mean']["Dice"],
             }, step=self.current_epoch)
-            wandb.log({
-                "mean_validation_dice_class_1": metrics['mean'][1]["Dice"]
-            })
-            wandb.log({
-                "mean_validation_dice_class_2": metrics['mean'][2]["Dice"]
-            })
+            for i in range(len(metrics['mean'])):
+                self.print_to_log_file(f"Mean Validation Dice Class {i}: ", metrics['mean'][i]["Dice"],
+                                       also_print_to_console=True)
+                wandb.log({
+                    f"mean_validation_dice_class_{i}": metrics['mean'][i]["Dice"]
+                }, step=self.current_epoch)
+
         self.set_deep_supervision_enabled(True)
         compute_gaussian.cache_clear()
         
