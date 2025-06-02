@@ -26,7 +26,7 @@ class nnUNetTrainer_Wandb_Logger(nnUNetTrainer):
         """used for debugging plans etc"""
         super().__init__(plans, configuration, fold, dataset_json, device)
         
-        self.num_epochs = 0
+        self.num_epochs = 1
         
         wandb.init(
                 project="pinkcc",
