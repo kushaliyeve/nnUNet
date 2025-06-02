@@ -83,6 +83,14 @@ class nnUNetTrainer_Wandb_Logger(nnUNetTrainer):
 
         self.current_epoch += 1
         
+    def on_train_end(self):
+        super().on_train_end()
+        
+        print("Saving final model checkpoint")
+        artifact = wandb.Artifact('best_model', type='model')
+        artifact.add_file(join(self.output_folder, 'checkpoint_final.pth'))
+        wandb.log_artifact(artifact, aliases=['latest', 'final'])
+        
     def perform_actual_validation(self, save_probabilities: bool = False):
         self.set_deep_supervision_enabled(False)
         self.network.eval()
