@@ -242,7 +242,7 @@ class nnUNetTrainer_Wandb_Logger(nnUNetTrainer):
             wandb.log({
                 "mean_validation_dice": metrics['foreground_mean']["Dice"],
             }, step=self.current_epoch)
-            for i in range(len(metrics['mean'])):
+            for i in range(1, len(metrics['mean'])+1):
                 self.print_to_log_file(f"Mean Validation Dice Class {i}: ", metrics['mean'][i]["Dice"],
                                        also_print_to_console=True)
                 wandb.log({
